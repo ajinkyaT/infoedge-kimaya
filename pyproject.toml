@@ -28,7 +28,7 @@ llama-index = "^0.10.52"
 langcodes = "^3.4.0"
 
 [tool.poetry.group.dev.dependencies]
-gradio = " 4.31.5"
+gradio = "4.38.0"
 
 [build-system]
 requires = ["poetry-core"]

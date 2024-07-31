@@ -31,16 +31,20 @@ def get_key_output(key, value):
 
 def predict(message, history):
     history_langchain_format = []
+    print(pprint.pformat(message))
     for human, ai in history:
         if human:
             if '.jpg' not in human and '.png' not in human and '.jpeg' not in human:
                 history_langchain_format.append(HumanMessage(content=human[0]))
         if ai:
             history_langchain_format.append(AIMessage(content=ai[0]))
-    if message['files']:
-        img_msg = HumanMessage(content=message['text'], additional_kwargs={'image':message['files'][0]})
+    if message.files:
+        if message.text:
+            img_msg = HumanMessage(content=message.text, additional_kwargs={'image':message.files[0].path})
+        else:
+            img_msg = HumanMessage(content='Provided Image',additional_kwargs={'image':message.files[0].path})
         history_langchain_format.append(img_msg)
-    else: history_langchain_format.append(HumanMessage(content=message['text']))
+    else: history_langchain_format.append(HumanMessage(content=message.text))
     inputs = {"messages": history_langchain_format}
     # return agentic_rag_graph.invoke(inputs)['messages'][-1].content
     partial_message = ""
@@ -48,7 +52,7 @@ def predict(message, history):
     for output in agentic_rag_graph.stream(inputs,  config= {"recursion_limit": 25}, stream_mode="updates",):
         for key, value in output.items():
             partial_message += get_key_output(key,value)
-            if key == 'translate_answer' and value['messages'][0].response_metadata['finish_reason'] == 'stop':
+            if key == 'translate_answer':
                  final_answer = value['messages'][0].content
             yield  partial_message
     yield final_answer
@@ -59,6 +63,7 @@ chatbot = gr.Chatbot(first_message)
 examples=[{"text":"lawn image", "files":["data/images/lawn_image.jpg"]},{"text": "How can I service my machine?"}]
 ci = gr.ChatInterface(predict,chatbot=chatbot, examples=examples, title="Personal Product Assistant", multimodal=True).queue().launch()
 
+
 with gr.Blocks(fill_height=True) as demo:
     ci.render()
-demo.launch(debug=True)
+demo.launch(debug=True, auth=('admin','admin'))

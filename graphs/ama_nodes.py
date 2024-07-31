@@ -66,7 +66,7 @@ def get_img_reco(state):
     if not img_tags:
         return {'next_step': "END"}
     img_decription = output.image_description
-    query = f"Suggest me product accessories from given documents where one or more Tags in products contains in the list {img_tags} \n Start answer by mentioning it seems like your lawn seems to have grass type mentioned in the tags list. Do not mention the word tags it is  only for your reference."
+    query = f"Suggest me product accessories from given documents where one or more Tags in products contains in the list {img_tags} \n Start answer by mentioning it seems like your lawn seems to have grass type mentioned in the tags list and then mention the tags identified. Do not mention the word 'tags' it is only for your reference."
     # mocking API request
     accessories = get_accessories_table() + f"\n source_file: product_accessories.csv"
     context_docs = AIMessage(content=accessories)
@@ -87,8 +87,8 @@ def parse_input_question(state):
         tuple: (translated english question, ISO Language code) 
     """
     question = state['messages'][-1]
-    # llm = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
-    llm = ChatGroq(temperature=0, model="llama3-70b-8192", streaming=False)
+    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", streaming=True)
+    # llm = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
     structured_llm_grader = llm.with_structured_output(ParseLangCode)
     lang_parser = parse_langcode_prompt | structured_llm_grader
@@ -114,9 +114,9 @@ def grade_documents(state):
             ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
         ]
     )
-    # llm = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
+    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", streaming=True)
     # llm = ChatGroq(temperature=0, model="llama3-70b-8192", streaming=False)
-    llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
+    # llm = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     structured_llm_grader = llm.with_structured_output(GradeDocuments)
     retrieval_grader = grade_prompt | structured_llm_grader
 
@@ -153,9 +153,9 @@ def agent(state):
     messages = state["messages"]
     # Ignore tool call messages
     messages = [m for m in messages if isinstance(m, HumanMessage) or (isinstance(m, AIMessage) and m.response_metadata.get('finish_reason') != 'tool_calls')]
-    # model = ChatOpenAI(temperature=0, streaming=True, model="gpt-4o")
+    model = ChatOpenAI(temperature=0, streaming=True, model="gpt-4o-mini")
     # model = ChatGroq(temperature=0.1, streaming=False, model="llama3-70b-8192")
-    model = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
+    # model = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     model = model.bind_tools(tools)
     qa_prompt = ChatPromptTemplate.from_messages(
         [
@@ -207,9 +207,9 @@ def rewrite(state):
 
     # Grader
     print(f"---BEFORE TRANSFORMED QUERY: {question}---")
-    # model = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
+    model = ChatOpenAI(temperature=0, model="gpt-4o-mini", streaming=True)
     # model = ChatGroq(temperature=0.5, model="llama3-70b-8192", streaming=False)
-    model = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
+    # model = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     new_q = new_q_prompt | model
     response = new_q.invoke(state["messages"])
     print(f"---TRANSFORMED QUERY: {response.content}---")
@@ -228,7 +228,7 @@ def generate(state):
     print("---GENERATE---")
     if state['next_step'] == 'END':
         ai_message = AIMessage(content='It seems like the provided image does not contain lawn or grass, please provide a relevant image.')
-        return {'context': None, 'messages': [ai_message]}
+        return {'context': None, 'messages': [ai_message],"generation": ai_message.content}
     messages = state["messages"]
     question = state['query']
     docs = messages[-1]
@@ -238,8 +238,8 @@ def generate(state):
     prompt = rag_prompt
 
     # LLM
-    # llm = ChatOpenAI(model_name="gpt-4o", temperature=0, streaming=True)
-    llm = ChatGroq(model_name="llama3-70b-8192", temperature=0, streaming=False)
+    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, streaming=True)
+    # llm = ChatGroq(model_name="llama-3.1-70b-versatile", temperature=0, streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
 
 
@@ -262,14 +262,14 @@ def grade_generation_v_documents_and_question(state):
     """
 
     print("---CHECK HALLUCINATIONS---")
-    question = state["query"]
     documents = state["context"]
     generation = state["generation"]
     if not documents:
         return 'useful'
-    # llm = ChatOpenAI(model_name="gpt-4o", temperature=0, streaming=True)
+    question = state["query"]
+    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, streaming=True)
     # llm = ChatGroq(model_name="llama3-70b-8192", temperature=0, streaming=False)
-    llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
+    # llm = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     structured_llm_hallu_grader = llm.with_structured_output(GradeHallucinations)
     structured_llm_ans_grader = llm.with_structured_output(GradeAnswer)
 
@@ -316,10 +316,10 @@ def translate_answer(state):
     """
     eng_answer = state['messages'][-1]
     lang_code = state["lang_code"]
-    if lang_code == 'en':
+    if lang_code == 'en' or not lang_code:
         return {'messages': [eng_answer]}
-    # llm = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
-    llm = ChatGroq(temperature=0, model="llama3-70b-8192", streaming=False)
+    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", streaming=True)
+    # llm = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
     print(f"---Translating final answer to lang code: {lang_code}---")
     answer_translator = translate_answer_prompt | llm
