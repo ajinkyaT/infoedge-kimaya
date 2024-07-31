@@ -64,6 +64,36 @@ examples=[{"text":"lawn image", "files":["data/images/lawn_image.jpg"]},{"text":
 ci = gr.ChatInterface(predict,chatbot=chatbot, examples=examples, title="Personal Product Assistant", multimodal=True).queue().launch()
 
 
-with gr.Blocks(fill_height=True) as demo:
-    ci.render()
-demo.launch(debug=True, auth=('admin','admin'))
+def make_call(phone):
+    # Call logic here
+    print(f"Calling {phone}...")
+    return "Call will be received shortly."
+
+# Define the chat interface
+chat_interface = gr.ChatInterface(
+    predict,
+    chatbot=gr.Chatbot(first_message),
+    examples=[
+        {"text": "lawn image", "files": ["data/images/lawn_image.jpg"]},
+        {"text": "How can I service my machine?"},
+    ],
+    title="Personal Product Assistant",
+    multimodal=True,
+)
+
+# Define the call interface
+call_interface = gr.Interface(
+    make_call,
+    inputs=gr.Textbox(placeholder="Enter 10 digit phone number"),
+    outputs="text",
+    title="Call",
+)
+
+# Create the tabbed interface
+demo = gr.TabbedInterface(
+    interface_list=[chat_interface, call_interface],
+    tab_names=["Chat", "Call"],
+)
+
+if __name__ == "__main__":
+    demo.launch(debug=True, auth=("admin", "admin"))

@@ -87,7 +87,7 @@ def parse_input_question(state):
         tuple: (translated english question, ISO Language code) 
     """
     question = state['messages'][-1]
-    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", streaming=True)
+    llm = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
     # llm = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
     structured_llm_grader = llm.with_structured_output(ParseLangCode)
@@ -153,7 +153,7 @@ def agent(state):
     messages = state["messages"]
     # Ignore tool call messages
     messages = [m for m in messages if isinstance(m, HumanMessage) or (isinstance(m, AIMessage) and m.response_metadata.get('finish_reason') != 'tool_calls')]
-    model = ChatOpenAI(temperature=0, streaming=True, model="gpt-4o-mini")
+    model = ChatOpenAI(temperature=0, streaming=True, model="gpt-4o")
     # model = ChatGroq(temperature=0.1, streaming=False, model="llama3-70b-8192")
     # model = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     model = model.bind_tools(tools)
@@ -238,7 +238,7 @@ def generate(state):
     prompt = rag_prompt
 
     # LLM
-    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, streaming=True)
+    llm = ChatOpenAI(model_name="gpt-4o", temperature=0, streaming=True)
     # llm = ChatGroq(model_name="llama-3.1-70b-versatile", temperature=0, streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
 
@@ -318,7 +318,7 @@ def translate_answer(state):
     lang_code = state["lang_code"]
     if lang_code == 'en' or not lang_code:
         return {'messages': [eng_answer]}
-    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", streaming=True)
+    llm = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
     # llm = ChatGroq(temperature=0, model="llama-3.1-70b-versatile", streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
     print(f"---Translating final answer to lang code: {lang_code}---")
