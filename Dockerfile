@@ -22,5 +22,10 @@ EXPOSE 8501
 # Set environment variable for the port
 ENV PORT 8080
 
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+RUN poetry update
+
 # Set the entry command to run the Streamlit app using Poetry
 CMD ["poetry", "run", "streamlit", "run", "streamlit_app.py", "--server.port", "8080"]
